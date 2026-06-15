@@ -1,0 +1,33 @@
+services:
+  - type: web
+    name: stocksight-backend
+    runtime: docker
+    plan: free
+    envVars:
+      - key: PROJECT_ROOT
+        value: /app
+      - key: ENVIRONMENT
+        value: production
+      - key: MODEL_PATH
+        value: yolo11n-seg.pt
+      - key: HF_MODEL_REPO_ID
+        sync: false
+      - key: CAMERA_SOURCE
+        sync: false
+      - key: CONFIDENCE_THRESHOLD
+        value: "0.35"
+      - key: IOU_THRESHOLD
+        value: "0.5"
+      - key: IMAGE_SIZE
+        value: "640"
+      - key: FRAME_SKIP
+        value: "1"
+      - key: PREFER_GPU
+        value: "false"
+      - key: DETECTION_MODE
+        value: retail_coco_fallback
+      - key: BLOCKED_CLASSES
+        value: person,car,motorcycle,airplane,bus,train,truck,boat,bicycle
+      - key: CORS_ORIGINS
+        sync: false
+    healthCheckPath: /health

@@ -1,0 +1,2 @@
+"""WarehouseSight-AI backend package."""
+
