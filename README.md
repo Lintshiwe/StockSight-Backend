@@ -8,7 +8,7 @@ GitHub repo: https://github.com/Lintshiwe/StockSight-Backend
 
 Hugging Face model repo: https://huggingface.co/lintshiwe/Modle_V2.0
 
-Deployed backend URL: pending Render login/deployment
+Deployed backend URL: https://stocksight-backend-0e6n.onrender.com
 
 FastAPI backend for live camera capture, YOLO segmentation inference, object tracking, zone monitoring, event storage, and analytics.
 
