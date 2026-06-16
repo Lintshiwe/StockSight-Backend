@@ -25,9 +25,9 @@ services:
       - key: PREFER_GPU
         value: "false"
       - key: DETECTION_MODE
-        value: retail_coco_fallback
+        value: all_objects
       - key: BLOCKED_CLASSES
-        value: person,car,motorcycle,airplane,bus,train,truck,boat,bicycle
+        value: ""
       - key: CORS_ORIGINS
         sync: false
     healthCheckPath: /health

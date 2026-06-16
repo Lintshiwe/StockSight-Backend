@@ -2,7 +2,7 @@ from app.storage.models import Detection
 from app.vision.detection_filter import DetectionFilter, DetectionFilterSettings
 
 
-def test_retail_fallback_blocks_person_and_cars() -> None:
+def test_retail_fallback_keeps_common_test_objects_visible() -> None:
     detections = [
         Detection("person", 0.99, [0, 0, 10, 10], centroid=(5, 5)),
         Detection("car", 0.91, [10, 0, 20, 10], centroid=(15, 5)),
@@ -12,7 +12,19 @@ def test_retail_fallback_blocks_person_and_cars() -> None:
 
     filtered = DetectionFilter(DetectionFilterSettings(detection_mode="retail_coco_fallback")).apply(detections)
 
-    assert [d.class_name for d in filtered] == ["couch", "refrigerator"]
+    assert [d.class_name for d in filtered] == ["person", "car", "couch", "refrigerator"]
+
+
+def test_all_objects_mode_allows_loaded_classes_without_a_custom_allow_list() -> None:
+    detections = [
+        Detection("person", 0.99, [0, 0, 10, 10], centroid=(5, 5)),
+        Detection("car", 0.91, [10, 0, 20, 10], centroid=(15, 5)),
+        Detection("couch", 0.85, [20, 0, 40, 20], centroid=(30, 10)),
+    ]
+
+    filtered = DetectionFilter(DetectionFilterSettings(detection_mode="all_objects")).apply(detections)
+
+    assert [d.class_name for d in filtered] == ["person", "car", "couch"]
 
 
 def test_strict_warehouse_retail_allows_custom_product_classes_only() -> None:
@@ -26,4 +38,3 @@ def test_strict_warehouse_retail_allows_custom_product_classes_only() -> None:
     filtered = DetectionFilter(DetectionFilterSettings(detection_mode="strict_warehouse_retail")).apply(detections)
 
     assert [d.class_name for d in filtered] == ["package", "iron"]
-

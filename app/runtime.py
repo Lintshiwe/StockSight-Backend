@@ -74,6 +74,13 @@ class VisionRuntime:
         self.model_loader.warmup(self.settings.image_size)
         return status
 
+    def try_load_configured_model(self) -> None:
+        try:
+            self.load_model(self.settings.model_path)
+        except Exception as exc:  # noqa: BLE001
+            self.last_error = f"Model auto-load failed: {exc}"
+            logger.warning("Model auto-load failed: %s", exc)
+
     def update_model_settings(self, payload: dict[str, Any]) -> dict[str, Any]:
         for key in (
             "confidence_threshold",

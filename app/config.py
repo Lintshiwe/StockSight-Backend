@@ -26,9 +26,9 @@ class Settings:
     enable_tracking: bool = True
     enable_masks: bool = True
     enable_zone_alerts: bool = True
-    detection_mode: str = "retail_coco_fallback"
+    detection_mode: str = "all_objects"
     allowed_classes: str = ""
-    blocked_classes: str = "person,car,motorcycle,airplane,bus,train,truck,boat,bicycle"
+    blocked_classes: str = ""
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
 
     def __post_init__(self) -> None:

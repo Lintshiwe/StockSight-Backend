@@ -31,6 +31,7 @@ def startup() -> None:
     settings.models_dir.mkdir(parents=True, exist_ok=True)
     settings.datasets_dir.mkdir(parents=True, exist_ok=True)
     settings.runs_dir.mkdir(parents=True, exist_ok=True)
+    runtime.try_load_configured_model()
     app.state.database = database
     app.state.repository = repository
     app.state.runtime = runtime
