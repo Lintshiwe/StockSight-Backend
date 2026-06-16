@@ -81,7 +81,6 @@ class VisionRuntime:
             path = self.model_registry.resolve(requested)
             self.settings.safe_model_path(path.name)
             status = self.model_loader.load(path, self.settings.prefer_gpu)
-            self.model_loader.warmup(self.settings.image_size)
             return status
         finally:
             self.model_loading = False
