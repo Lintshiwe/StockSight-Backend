@@ -44,6 +44,8 @@ class VisionRuntime:
         self.latest_frame_jpeg: bytes | None = None
         self.latest_payload: dict[str, Any] = {"detections": [], "alerts": [], "fps": 0.0}
         self.last_error: str | None = None
+        self.model_loading = False
+        self._model_lock = threading.Lock()
         self._frame_index = 0
 
     def start_camera(self) -> dict[str, Any]:
@@ -67,12 +69,23 @@ class VisionRuntime:
         return self.camera.status()
 
     def load_model(self, model_path: str | None = None) -> dict[str, Any]:
+        if self.model_loading:
+            return self.model_status()
         requested = model_path or self.settings.model_path
-        path = self.model_registry.resolve(requested)
-        self.settings.safe_model_path(path.name)
-        status = self.model_loader.load(path, self.settings.prefer_gpu)
-        self.model_loader.warmup(self.settings.image_size)
-        return status
+        if self.model_loader.model is not None and self.model_loader.model_path and self.model_loader.model_path.name == Path(requested).name:
+            return self.model_status()
+        if not self._model_lock.acquire(blocking=False):
+            return self.model_status()
+        self.model_loading = True
+        try:
+            path = self.model_registry.resolve(requested)
+            self.settings.safe_model_path(path.name)
+            status = self.model_loader.load(path, self.settings.prefer_gpu)
+            self.model_loader.warmup(self.settings.image_size)
+            return status
+        finally:
+            self.model_loading = False
+            self._model_lock.release()
 
     def try_load_configured_model(self) -> None:
         try:
@@ -107,6 +120,7 @@ class VisionRuntime:
     def model_status(self) -> dict[str, Any]:
         return {
             **self.model_loader.status(),
+            "loading": self.model_loading,
             "confidence_threshold": self.settings.confidence_threshold,
             "iou_threshold": self.settings.iou_threshold,
             "image_size": self.settings.image_size,
