@@ -134,6 +134,19 @@ class VisionRuntime:
     def refresh_zones(self) -> None:
         self.zone_engine.set_zones(self.repository.list_zones())
 
+    def detect_frame(self, frame: np.ndarray, confidence: float | None = None, iou: float | None = None) -> list[Detection]:
+        if self.model_loader.model is None:
+            return []
+        detections = self.segmenter.infer(
+            frame,
+            confidence if confidence is not None else self.settings.confidence_threshold,
+            iou if iou is not None else self.settings.iou_threshold,
+            self.settings.image_size,
+            self.settings.enable_tracking,
+        )
+        detections = self.detection_filter.apply(detections)
+        return self.zone_engine.annotate_detections(detections)
+
     def _process_loop(self) -> None:
         while self.processing:
             frame = self.camera.read_latest()

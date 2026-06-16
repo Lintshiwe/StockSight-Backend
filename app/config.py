@@ -30,6 +30,7 @@ class Settings:
     allowed_classes: str = ""
     blocked_classes: str = ""
     cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    camliveai_token: str = "stocksight-camliveai-token"
 
     def __post_init__(self) -> None:
         self.project_root = Path(os.getenv("PROJECT_ROOT", str(self.project_root))).resolve()
@@ -49,6 +50,7 @@ class Settings:
         self.allowed_classes = os.getenv("ALLOWED_CLASSES", self.allowed_classes)
         self.blocked_classes = os.getenv("BLOCKED_CLASSES", self.blocked_classes)
         self.cors_origins = os.getenv("CORS_ORIGINS", self.cors_origins)
+        self.camliveai_token = os.getenv("CAMLIVEAI_TOKEN", self.camliveai_token)
 
     @property
     def backend_dir(self) -> Path:
@@ -80,7 +82,9 @@ class Settings:
 
     @property
     def cors_origin_list(self) -> list[str]:
-        return [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+        required = ["https://stocksight-frontend.netlify.app", "https://camliveai.netlify.app"]
+        origins = [origin.strip() for origin in self.cors_origins.split(",") if origin.strip()]
+        return list(dict.fromkeys([*origins, *required]))
 
     @property
     def allowed_class_list(self) -> list[str]:

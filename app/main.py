@@ -5,7 +5,7 @@ import threading
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api import routes_analytics, routes_camera, routes_events, routes_model, routes_zones
+from app.api import routes_analytics, routes_camera, routes_detection, routes_events, routes_model, routes_zones
 from app.config import settings
 from app.runtime import VisionRuntime
 from app.storage.database import Database
@@ -45,6 +45,7 @@ def health() -> dict[str, str]:
 
 
 app.include_router(routes_camera.router)
+app.include_router(routes_detection.router)
 app.include_router(routes_events.router)
 app.include_router(routes_analytics.router)
 app.include_router(routes_model.router)
