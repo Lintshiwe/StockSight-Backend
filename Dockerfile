@@ -14,6 +14,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir --index-url https://download.pytorch.org/whl/cpu torch
 RUN pip install --no-cache-dir -r requirements.txt
 RUN pip uninstall -y opencv-python || true
+RUN pip install --no-cache-dir --force-reinstall --no-deps "opencv-python-headless>=4.9.0"
 
 COPY app ./app
 
