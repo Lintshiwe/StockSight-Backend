@@ -12,7 +12,7 @@ def test_retail_fallback_keeps_common_test_objects_visible() -> None:
 
     filtered = DetectionFilter(DetectionFilterSettings(detection_mode="retail_coco_fallback")).apply(detections)
 
-    assert [d.class_name for d in filtered] == ["person", "car", "couch", "refrigerator"]
+    assert [d.class_name for d in filtered] == ["couch", "refrigerator"]
 
 
 def test_all_objects_mode_allows_loaded_classes_without_a_custom_allow_list() -> None:

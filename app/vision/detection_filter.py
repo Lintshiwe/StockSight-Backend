@@ -82,7 +82,7 @@ class DetectionFilter:
 
     def apply(self, detections: list[Detection]) -> list[Detection]:
         allowed = self.allowed_class_set()
-        blocked = set() if self.settings.detection_mode in {"all_objects", "retail_coco_fallback"} else set(self.settings.blocked_classes)
+        blocked = set() if self.settings.detection_mode == "all_objects" else set(self.settings.blocked_classes)
         return [
             detection
             for detection in detections
@@ -97,14 +97,14 @@ class DetectionFilter:
         if self.settings.detection_mode == "strict_warehouse_retail":
             return set(STRICT_WAREHOUSE_RETAIL_CLASSES)
         if self.settings.detection_mode == "retail_coco_fallback":
-            return set(self.settings.allowed_classes)
+            return set(RETAIL_COCO_FALLBACK_CLASSES) | set(STRICT_WAREHOUSE_RETAIL_CLASSES)
         return set(STRICT_WAREHOUSE_RETAIL_CLASSES) | {"person", "helmet", "safety_vest", "forklift"}
 
     def status(self, loaded_class_names: dict[int, str] | dict[str, str] | None = None) -> dict[str, object]:
         loaded = set((loaded_class_names or {}).values())
         allowed = self.allowed_class_set()
         matching = sorted(loaded & allowed)
-        blocked = set() if self.settings.detection_mode in {"all_objects", "retail_coco_fallback"} else set(self.settings.blocked_classes)
+        blocked = set() if self.settings.detection_mode == "all_objects" else set(self.settings.blocked_classes)
         blocked_loaded = sorted(loaded & blocked)
         return {
             "detection_mode": self.settings.detection_mode,
