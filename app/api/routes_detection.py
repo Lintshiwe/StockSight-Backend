@@ -51,7 +51,7 @@ def detection_single(
     service = runtime(request)
     try:
         service.camera.ingest_jpeg(raw)
-        detections = service.process_mobile_frame(frame, payload.confidence, payload.iou)
+        detections = service.process_mobile_frame(frame)
     except RuntimeError as exc:
         raise HTTPException(status_code=503, detail=str(exc)) from exc
     except ValueError as exc:

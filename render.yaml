@@ -19,9 +19,9 @@ services:
       - key: IOU_THRESHOLD
         value: "0.5"
       - key: IMAGE_SIZE
-        value: "640"
+        value: "416"
       - key: FRAME_SKIP
-        value: "1"
+        value: "2"
       - key: PREFER_GPU
         value: "false"
       - key: DETECTION_MODE

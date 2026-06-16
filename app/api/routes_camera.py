@@ -4,6 +4,8 @@ import asyncio
 import json
 from typing import Any
 
+import cv2
+import numpy as np
 from fastapi import APIRouter, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
@@ -57,9 +59,17 @@ async def mobile_camera_frame(request: Request) -> dict[str, Any]:
     if not data:
         raise HTTPException(status_code=400, detail="Missing mobile camera frame")
     try:
-        return runtime(request).camera.ingest_jpeg(data)
+        service = runtime(request)
+        service.camera.ingest_jpeg(data)
+        frame = cv2.imdecode(np.frombuffer(data, dtype=np.uint8), cv2.IMREAD_COLOR)
+        if frame is None:
+            raise ValueError("Unable to decode mobile camera frame")
+        detections = service.process_mobile_frame(frame)
+        return {**service.camera.status(), "processed": True, "detections": len(detections)}
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
 
 
 @router.get("/api/stream/frame")

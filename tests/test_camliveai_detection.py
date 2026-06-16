@@ -123,6 +123,37 @@ def test_camliveai_detection_maps_stock_sight_detections() -> None:
     assert body["tenant_type"] == "retail"
 
 
+def test_camliveai_detection_ignores_client_thresholds() -> None:
+    camera = SimpleNamespace(ingest_jpeg=lambda data: None)
+    model_loader = SimpleNamespace(class_names={0: "box"}, model_path=SimpleNamespace(name="warehouse.pt"))
+    received = {}
+
+    def process_mobile_frame(frame, confidence=None, iou=None):
+        received["confidence"] = confidence
+        received["iou"] = iou
+        return []
+
+    runtime = SimpleNamespace(
+        camera=camera,
+        model_loader=model_loader,
+        settings=SimpleNamespace(model_path="warehouse.pt"),
+        process_mobile_frame=process_mobile_frame,
+    )
+    payload = routes_detection.SingleDetectionRequest(
+        image=encoded_test_image(),
+        confidence=0.01,
+        iou=0.99,
+    )
+
+    routes_detection.detection_single(
+        payload,
+        request_for(runtime),
+        authorization="Bearer stocksight-camliveai-token",
+    )
+
+    assert received == {"confidence": None, "iou": None}
+
+
 def test_camliveai_detection_adds_shape_fields_for_masks() -> None:
     camera = SimpleNamespace(ingest_jpeg=lambda data: None)
     model_loader = SimpleNamespace(class_names={0: "box"}, model_path=SimpleNamespace(name="warehouse.pt"))
