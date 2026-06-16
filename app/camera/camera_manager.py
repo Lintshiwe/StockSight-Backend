@@ -27,14 +27,14 @@ class CameraManager:
         self.last_error: str | None = None
         self.frame_width = 0
         self.frame_height = 0
-        self.source_type = "webcam" if source.isdigit() else "stream"
+        self.source_type = self._source_type(source)
 
     def set_source(self, source: str) -> None:
         was_running = self.running
         if was_running:
             self.stop()
         self.source = source
-        self.source_type = "webcam" if source.isdigit() else "stream"
+        self.source_type = self._source_type(source)
         if was_running:
             self.start()
 
@@ -42,6 +42,9 @@ class CameraManager:
         if self.running:
             return
         self.running = True
+        if self.source_type == "mobile":
+            self.last_error = None
+            return
         self.thread = threading.Thread(target=self._capture_loop, name="camera-capture", daemon=True)
         self.thread.start()
 
@@ -53,6 +56,23 @@ class CameraManager:
         if self.capture:
             self.capture.release()
         self.capture = None
+
+    def ingest_jpeg(self, data: bytes) -> dict[str, Any]:
+        if self.source_type != "mobile":
+            self.set_source("mobile")
+        if not self.running:
+            self.start()
+        array = np.frombuffer(data, dtype=np.uint8)
+        frame = cv2.imdecode(array, cv2.IMREAD_COLOR)
+        if frame is None:
+            self.last_error = "Unable to decode mobile camera frame"
+            raise ValueError(self.last_error)
+        self.frame_height, self.frame_width = frame.shape[:2]
+        self.last_error = None
+        if self.frames.full():
+            self.frames.get_nowait()
+        self.frames.put_nowait(frame)
+        return self.status()
 
     def read_latest(self) -> np.ndarray | None:
         latest: np.ndarray | None = None
@@ -77,6 +97,11 @@ class CameraManager:
         self.frame_height = int(capture.get(cv2.CAP_PROP_FRAME_HEIGHT) or 0)
         return capture
 
+    def _source_type(self, source: str) -> str:
+        if source == "mobile":
+            return "mobile"
+        return "webcam" if source.isdigit() else "stream"
+
     def _capture_loop(self) -> None:
         while self.running:
             try:
@@ -96,4 +121,3 @@ class CameraManager:
                     self.capture.release()
                     self.capture = None
                 time.sleep(self.reconnect_seconds)
-

@@ -44,6 +44,24 @@ def camera_source(payload: CameraSourceRequest, request: Request) -> dict[str, A
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
 
+@router.post("/api/mobile-camera/connect")
+def mobile_camera_connect(request: Request) -> dict[str, Any]:
+    service = runtime(request)
+    service.set_camera_source("mobile")
+    return service.start_camera()
+
+
+@router.post("/api/mobile-camera/frame")
+async def mobile_camera_frame(request: Request) -> dict[str, Any]:
+    data = await request.body()
+    if not data:
+        raise HTTPException(status_code=400, detail="Missing mobile camera frame")
+    try:
+        return runtime(request).camera.ingest_jpeg(data)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
 @router.get("/api/stream/frame")
 def stream_frame(request: Request) -> StreamingResponse:
     service = runtime(request)
@@ -68,4 +86,3 @@ async def websocket_live(websocket: WebSocket) -> None:
             await asyncio.sleep(0.2)
     except WebSocketDisconnect:
         return
-
