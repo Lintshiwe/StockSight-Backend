@@ -18,6 +18,21 @@ def polygon_area(points: list[Point] | None) -> float:
     return float(abs(cv2.contourArea(contour)))
 
 
+def oriented_bbox(points: list[Point] | None) -> dict[str, object] | None:
+    if not points or len(points) < 3:
+        return None
+    contour = np.array(points, dtype=np.float32)
+    (center_x, center_y), (width, height), angle = cv2.minAreaRect(contour)
+    box = cv2.boxPoints(((center_x, center_y), (width, height), angle))
+    return {
+        "points": [[float(x), float(y)] for x, y in box.tolist()],
+        "center": [float(center_x), float(center_y)],
+        "width": float(width),
+        "height": float(height),
+        "angle": float(angle),
+    }
+
+
 def draw_annotations(frame: np.ndarray, detections: list[Detection], zones: list[Zone]) -> np.ndarray:
     annotated = frame.copy()
     for zone in zones:
@@ -53,4 +68,3 @@ def class_color(class_name: str) -> tuple[int, int, int]:
         "safety_vest": (93, 184, 114),
     }
     return palette.get(class_name, (204, 120, 92))
-

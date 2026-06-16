@@ -121,3 +121,61 @@ def test_camliveai_detection_maps_stock_sight_detections() -> None:
     assert body["total_count"] == 1
     assert body["model_used"] == "warehouse.pt"
     assert body["tenant_type"] == "retail"
+
+
+def test_camliveai_detection_adds_shape_fields_for_masks() -> None:
+    camera = SimpleNamespace(ingest_jpeg=lambda data: None)
+    model_loader = SimpleNamespace(class_names={0: "box"}, model_path=SimpleNamespace(name="warehouse.pt"))
+    runtime = SimpleNamespace(
+        camera=camera,
+        model_loader=model_loader,
+        settings=SimpleNamespace(model_path="warehouse.pt"),
+        process_mobile_frame=lambda frame, confidence=None, iou=None: [
+            Detection(
+                class_name="box",
+                confidence=0.91,
+                bbox=[10.0, 20.0, 50.0, 70.0],
+                mask=[(10.0, 20.0), (50.0, 24.0), (46.0, 70.0), (12.0, 68.0)],
+                area=1800.0,
+                centroid=(30.0, 45.0),
+            )
+        ],
+    )
+    payload = routes_detection.SingleDetectionRequest(image=encoded_test_image())
+
+    body = routes_detection.detection_single(
+        payload,
+        request_for(runtime),
+        authorization="Bearer stocksight-camliveai-token",
+    )
+
+    detection = body["detections"][0]
+    assert detection["polygon"] == [[10.0, 20.0], [50.0, 24.0], [46.0, 70.0], [12.0, 68.0]]
+    assert detection["mask"] == detection["polygon"]
+    assert detection["oriented_bbox"]["points"]
+    assert detection["oriented_bbox"]["width"] > 0
+    assert detection["oriented_bbox"]["height"] > 0
+
+
+def test_camliveai_detection_omits_shape_fields_without_masks() -> None:
+    camera = SimpleNamespace(ingest_jpeg=lambda data: None)
+    model_loader = SimpleNamespace(class_names={0: "box"}, model_path=SimpleNamespace(name="warehouse.pt"))
+    runtime = SimpleNamespace(
+        camera=camera,
+        model_loader=model_loader,
+        settings=SimpleNamespace(model_path="warehouse.pt"),
+        process_mobile_frame=lambda frame, confidence=None, iou=None: [
+            Detection(class_name="box", confidence=0.91, bbox=[10.0, 20.0, 50.0, 70.0], area=2000.0)
+        ],
+    )
+    payload = routes_detection.SingleDetectionRequest(image=encoded_test_image())
+
+    body = routes_detection.detection_single(
+        payload,
+        request_for(runtime),
+        authorization="Bearer stocksight-camliveai-token",
+    )
+
+    detection = body["detections"][0]
+    assert "polygon" not in detection
+    assert "oriented_bbox" not in detection

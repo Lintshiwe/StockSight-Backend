@@ -10,6 +10,7 @@ from fastapi import APIRouter, Header, HTTPException, Request
 from pydantic import BaseModel
 
 from app.config import settings
+from app.vision.mask_utils import oriented_bbox
 
 
 router = APIRouter()
@@ -59,14 +60,20 @@ def detection_single(
     class_lookup = {name: class_id for class_id, name in service.model_loader.class_names.items()}
     for detection in detections:
         x1, y1, x2, y2 = detection.bbox
-        response_detections.append(
-            {
-                "bbox": [x1, y1, max(0.0, x2 - x1), max(0.0, y2 - y1)],
-                "class_name": detection.class_name,
-                "confidence": detection.confidence,
-                "class_id": class_lookup.get(detection.class_name),
-            }
-        )
+        response_detection: dict[str, Any] = {
+            "bbox": [x1, y1, max(0.0, x2 - x1), max(0.0, y2 - y1)],
+            "class_name": detection.class_name,
+            "confidence": detection.confidence,
+            "class_id": class_lookup.get(detection.class_name),
+        }
+        if detection.mask and len(detection.mask) >= 3:
+            polygon = [[float(x), float(y)] for x, y in detection.mask]
+            response_detection["polygon"] = polygon
+            response_detection["mask"] = polygon
+            shape_box = oriented_bbox(detection.mask)
+            if shape_box:
+                response_detection["oriented_bbox"] = shape_box
+        response_detections.append(response_detection)
 
     return {
         "detections": response_detections,
