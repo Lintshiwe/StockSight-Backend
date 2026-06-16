@@ -50,7 +50,7 @@ class Settings:
         self.allowed_classes = os.getenv("ALLOWED_CLASSES", self.allowed_classes)
         self.blocked_classes = os.getenv("BLOCKED_CLASSES", self.blocked_classes)
         self.cors_origins = os.getenv("CORS_ORIGINS", self.cors_origins)
-        self.camliveai_token = os.getenv("CAMLIVEAI_TOKEN", self.camliveai_token)
+        self.camliveai_token = os.getenv("MOBILE_API_TOKEN", os.getenv("CAMLIVEAI_TOKEN", self.camliveai_token))
 
     @property
     def backend_dir(self) -> Path:

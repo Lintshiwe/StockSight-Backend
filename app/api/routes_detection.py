@@ -19,6 +19,7 @@ class SingleDetectionRequest(BaseModel):
     image: str
     confidence: float | None = None
     iou: float | None = None
+    cameraId: str | None = None
 
 
 def runtime(request: Request) -> Any:
@@ -47,7 +48,13 @@ def detection_single(
         raise HTTPException(status_code=400, detail="Unable to decode JPEG image")
 
     service = runtime(request)
-    detections = service.detect_frame(frame, payload.confidence, payload.iou)
+    try:
+        service.camera.ingest_jpeg(raw)
+        detections = service.process_mobile_frame(frame, payload.confidence, payload.iou)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=503, detail=str(exc)) from exc
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
     response_detections = []
     class_lookup = {name: class_id for class_id, name in service.model_loader.class_names.items()}
     for detection in detections:
@@ -65,6 +72,7 @@ def detection_single(
         "detections": response_detections,
         "total_count": len(response_detections),
         "processing_time_ms": round((time.perf_counter() - started) * 1000, 2),
-        "model_used": service.model_loader.model_path.name if service.model_loader.model_path else "loading",
-        "tenant_type": "warehouse",
+        "model_used": service.model_loader.model_path.name if service.model_loader.model_path else service.settings.model_path,
+        "tenant_type": "retail",
+        "camera_id": payload.cameraId,
     }

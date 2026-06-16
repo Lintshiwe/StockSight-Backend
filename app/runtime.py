@@ -93,6 +93,17 @@ class VisionRuntime:
             self.last_error = f"Model auto-load failed: {exc}"
             logger.warning("Model auto-load failed: %s", exc)
 
+    def ensure_model_loaded(self) -> bool:
+        if self.model_loader.model is not None:
+            return True
+        try:
+            self.load_model(self.settings.model_path)
+        except Exception as exc:  # noqa: BLE001
+            self.last_error = f"Model load failed: {exc}"
+            logger.warning("Model load failed: %s", exc)
+            return False
+        return self.model_loader.model is not None
+
     def update_model_settings(self, payload: dict[str, Any]) -> dict[str, Any]:
         for key in (
             "confidence_threshold",
@@ -145,6 +156,25 @@ class VisionRuntime:
         )
         detections = self.detection_filter.apply(detections)
         return self.zone_engine.annotate_detections(detections)
+
+    def process_mobile_frame(self, frame: np.ndarray, confidence: float | None = None, iou: float | None = None) -> list[Detection]:
+        if not self.ensure_model_loaded():
+            raise RuntimeError("Detection model is not available")
+        detections = self.detect_frame(frame, confidence, iou)
+        occupancy = self.zone_engine.zone_occupancy(detections)
+        summary = self.analytics.update(detections, occupancy).__dict__
+        self.latest_frame_jpeg = encode_jpeg(draw_annotations(frame, detections, self.zone_engine.zones))
+        self.latest_payload = {
+            "timestamp": time.time(),
+            "fps": 0.0,
+            "camera": self.camera.status(),
+            "model": self.model_status(),
+            "detections": [asdict(detection) for detection in detections],
+            "alerts": [],
+            "analytics": summary,
+        }
+        self.last_error = None
+        return detections
 
     def _process_loop(self) -> None:
         while self.processing:
